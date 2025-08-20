@@ -897,6 +897,10 @@ class AsyncMPClient(MPClient):
     async def get_supported_tasks_async(self) -> tuple[SupportedTask, ...]:
         return await self.call_utility_async("get_supported_tasks")
 
+    async def get_free_kv_cache_tokens_async(self) -> int:
+        """Get the number of free KV cache tokens available."""
+        return await self.call_utility_async("get_free_kv_cache_tokens")
+
     async def add_request_async(self, request: EngineCoreRequest) -> None:
         request.client_index = self.client_index
         await self._send_input(EngineCoreRequestType.ADD, request)

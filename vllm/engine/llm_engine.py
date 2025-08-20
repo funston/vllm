@@ -825,6 +825,19 @@ class LLMEngine:
         """Gets the number of unfinished requests."""
         return sum(scheduler.get_num_unfinished_seq_groups()
                    for scheduler in self.scheduler)
+    
+    def get_free_kv_cache_tokens(self) -> int:
+        """Gets the number of free KV cache tokens available.
+        
+        This method queries the block manager to determine how many tokens
+        worth of KV cache memory is currently available. Used by ScalarLM
+        for dynamic batch sizing.
+        
+        Returns:
+            int: Number of free tokens available in KV cache
+        """
+        return sum(scheduler.block_manager.get_free_kv_cache_tokens()
+                  for scheduler in self.scheduler)
 
     def has_unfinished_requests(self) -> bool:
         """Returns True if there are unfinished requests."""

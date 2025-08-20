@@ -576,6 +576,22 @@ async def show_version():
     return JSONResponse(content=ver)
 
 
+@router.get("/v1/kv_cache/free_tokens")
+async def get_free_kv_cache_tokens(request: Request):
+    """Get the number of free KV cache tokens available.
+    
+    This endpoint queries the vLLM engine for the current number of 
+    free tokens available in the KV cache, used by ScalarLM for 
+    dynamic batch sizing.
+    
+    Returns:
+        JSON response with free_tokens count
+    """
+    engine_client: EngineClient = request.app.state.engine_client
+    free_tokens = await engine_client.get_free_kv_cache_tokens()
+    return JSONResponse(content={"free_tokens": free_tokens})
+
+
 @router.post("/v1/responses",
              dependencies=[Depends(validate_json_request)],
              responses={

@@ -523,3 +523,16 @@ class SelfAttnBlockSpaceManager(BlockSpaceManager):
         cached in the block manager for the sequence.
         """
         return self._computed_blocks_tracker.get_num_cached_tokens(seq)
+    
+    def get_free_kv_cache_tokens(self) -> int:
+        """Get the number of free KV cache tokens available.
+        
+        This method calculates the total number of tokens that can be stored
+        in the currently free GPU blocks, which is used by ScalarLM for
+        dynamic batch sizing.
+        
+        Returns:
+            int: Number of free tokens available in KV cache
+        """
+        free_gpu_blocks = self.get_num_free_gpu_blocks()
+        return free_gpu_blocks * self.block_size

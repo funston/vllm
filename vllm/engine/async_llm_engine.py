@@ -1055,6 +1055,18 @@ class AsyncLLMEngine(EngineClient):
     async def get_lora_config(self) -> LoRAConfig:
         """Get the lora configuration of the vLLM engine."""
         return self.engine.get_lora_config()
+    
+    async def get_free_kv_cache_tokens(self) -> int:
+        """Get the number of free KV cache tokens available.
+        
+        This method queries the block manager to determine how many tokens
+        worth of KV cache memory is currently available. Used by ScalarLM
+        for dynamic batch sizing.
+        
+        Returns:
+            int: Number of free tokens available in KV cache
+        """
+        return self.engine.get_free_kv_cache_tokens()
 
     async def do_log_stats(
             self,
