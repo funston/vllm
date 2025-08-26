@@ -85,7 +85,43 @@ class OpenAIServingModels:
                 raise ValueError(load_result.error.message)
 
     def is_base_model(self, model_name) -> bool:
-        return any(model.name == model_name for model in self.base_model_paths)
+        import os
+        from pathlib import Path
+        logger.info(f"=== DYNAMIC MODEL SCANNING: Checking model '{model_name}' ===")
+        
+        # Check static base models first
+        if any(model.name == model_name for model in self.base_model_paths):
+            logger.info(f"Model '{model_name}' found in static base_model_paths")
+            return True
+        
+        # Check if model exists in training directory (ScalarLM trained .pt models)
+        training_dir = os.environ.get("TRAINING_JOB_DIRECTORY", "/app/cray/jobs")
+        model_path = os.path.join(training_dir, model_name)
+        
+        if os.path.exists(model_path):
+            # Verify it has .pt files
+            pt_files = list(Path(model_path).glob("*.pt"))
+            if len(pt_files) > 0:
+                logger.info(f"=== FOUND TRAINED MODEL: {model_name} -> {model_path} (found {len(pt_files)} .pt files) ===")
+                
+                # Add discovered .pt model as a base model path (direct loading, no LoRA)
+                # Find the latest checkpoint file
+                latest_pt_file = max(pt_files, key=lambda f: f.stat().st_mtime)
+                logger.info(f"Using latest .pt file: {latest_pt_file}")
+                
+                # Add to base_model_paths so vLLM can load it directly with load_format="pt"
+                new_base_model = BaseModelPath(name=model_name, model_path=str(latest_pt_file))
+                self.base_model_paths.append(new_base_model)
+                
+                logger.info(f"=== REGISTERED .PT MODEL AS BASE MODEL: {model_name} -> {latest_pt_file} ===")
+                return True
+            else:
+                logger.debug(f"Directory {model_path} exists but contains no .pt files")
+        else:
+            logger.debug(f"Model path {model_path} does not exist")
+        
+        logger.info(f"Model '{model_name}' not found in base paths or training directory")
+        return False
 
     def model_name(self, lora_request: Optional[LoRARequest] = None) -> str:
         """Returns the appropriate model name depending on the availability
